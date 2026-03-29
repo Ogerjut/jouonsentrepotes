@@ -1,5 +1,6 @@
 import { Resend } from "resend";
-import {RESEND_API_KEY} from '$env/static/private'
+// import {RESEND_API_KEY} from '$env/static/private'
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 const resend = new Resend(RESEND_API_KEY);
 
