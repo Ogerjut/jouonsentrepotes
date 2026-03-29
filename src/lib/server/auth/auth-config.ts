@@ -1,15 +1,14 @@
 
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { username } from "better-auth/plugins";
-// import { ObjectId } from "mongodb";
-// import { sendEmail } from "./email/email.js";
-// import { verificationEmail } from "./email/verification-email.js";
-// import { resetPassword } from "./email/reset-password.js";
 
 import type { BetterAuthOptions } from "better-auth";
 import { ObjectId } from "mongodb";
 import { db, userStatsCollection } from "../db/db";
 import type { UserStatsDB } from "$lib/types/db/userStatsDB";
+import { sendEmail } from "../email/email";
+import { resetPassword } from "../email/reset-password";
+import { verificationEmail } from "../email/verification-email";
 
 export const baseAuthConfig = {
   secret:  process.env.BETTER_AUTH_SECRET,
@@ -23,14 +22,14 @@ export const baseAuthConfig = {
     maxPasswordLength: 64,
     requireEmailVerification: true,
 
-    // sendResetPassword: async ({user, url, token}, request) => {
-    //   await sendEmail({
-    //     to: user.email,
-    //     subject: "Reset your password",
-    //     text: `Click the link to reset your password: ${url}`,
-    //     html : resetPassword(url)
-    //   });
-    // },
+    sendResetPassword: async ({user, url, token}, request) => {
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your password",
+        text: `Click the link to reset your password: ${url}`,
+        html : resetPassword(url)
+      });
+    },
   
   },
 
@@ -40,19 +39,19 @@ export const baseAuthConfig = {
     }),
   ],
 
-  // emailVerification: {
-	// 	sendVerificationEmail: async ({ user, url, token }) => {
-	// 		await sendEmail({
-  //       to : user.email,
-  //       subject : "Verify your email adress",
-  //       text : `click the link to verify your email ${url}`,
-  //       html : verificationEmail(url)
-  //     })
-	// 	},
-	// 	sendOnSignUp: true,
-	// 	autoSignInAfterVerification: true,
-	// 	expiresIn: 3600 // 1 hour
-	// },
+  emailVerification: {
+		sendVerificationEmail: async ({ user, url, token }) => {
+			await sendEmail({
+        to : user.email,
+        subject : "Verify your email adress",
+        text : `click the link to verify your email ${url}`,
+        html : verificationEmail(url)
+      })
+		},
+		sendOnSignUp: true,
+		autoSignInAfterVerification: true,
+		expiresIn: 3600 // 1 hour
+	},
 
   user: {
     changeEmail : {
