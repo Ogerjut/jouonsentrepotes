@@ -11,7 +11,7 @@ if (browser) {
     socket = io(PUBLIC_SOCKET_URL, {
     path: '/socket.io',
     withCredentials: true,
-    transports: ['websocket', 'polling'], 
+    transports: ['polling', 'websocket'], 
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,

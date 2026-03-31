@@ -1,6 +1,6 @@
 import type { HandfulResponse } from "$lib/client/games/tarot/TarotController.svelte"
 import type { Tarot } from "$lib/client/games/tarot/useTarot.svelte"
-import type { Card, Handful, TarotBid, UserTarotState } from "../games/tarot"
+import type { Card, Handful, Suit, TarotBid, UserTarotState } from "../games/tarot"
 import type { TarotTable } from "../table"
 
 export interface ServerToClientTarotEvents  {
@@ -19,6 +19,5 @@ export interface ClientToServerTarotEvents {
     'tarot:checkHandful' : (response : (res : HandfulResponse)=> void ) => void
     "tarot:endHandfulSlam" : () => void
     "tarot:registerDog" : () => void
-
-
+    "tarot:registerKingCall" : (king : Suit) => void
 }

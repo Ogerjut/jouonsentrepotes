@@ -26,6 +26,7 @@
         display: flex;
         padding: 5px;
         background-color: var(--color-bg-box);
+        width : fit-content;
         
     }
 </style>

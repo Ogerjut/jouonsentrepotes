@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Tarot } from "$lib/client/games/tarot/useTarot.svelte";
 	import LastTrick from "./LastTrick.svelte";
+	import MiniCard from "./MiniCard.svelte";
 
     type RoundInfoProps = {
             game : Tarot
@@ -20,13 +21,22 @@
 
     const displayTrickColor = $derived(trickColor ?  mapTrickColor[trickColor] : "libre")
 
+    const pos = $derived(game.table.playersId.length === 4 ? "1 / 3" : "2 / 3")
+
 </script>
 
-<div id="round-info" style="grid-area: 1 / 3">
+{#if game.table.gameState.calledSuit}
+    <div id="round-info" style="grid-area: ${pos} ">
     <LastTrick {game} />
+    <hr> 
+        <div style="display: flex; padding : 3px;">
+            Roi appellé : <MiniCard value={14} suit={game.table.gameState.calledSuit}  />
+        </div>
     <hr>
-    Couleur : {displayTrickColor}
-</div>
+    Couleur pli : {displayTrickColor}
+    </div>
+{/if}
+
 
 <style>
     #round-info{
@@ -38,6 +48,8 @@
         border-radius: 10px;
         padding: 3px;
         margin-top: 5px;
+        width : fit-content;
+        height: 150px;
     }
 
     hr{

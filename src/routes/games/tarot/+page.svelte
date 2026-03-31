@@ -63,7 +63,7 @@
             </label>
           
             <label class="hit-area" for="r5">
-              <input disabled={true} type="radio" name="nbPlayers" id="r5" value="5" onchange={(e)=> nbPlayers = e.target?.value} >
+              <input type="radio" name="nbPlayers" id="r5" value="5" onchange={(e)=> nbPlayers = e.target?.value} >
               5 joueurs
             </label>
 

@@ -1,7 +1,7 @@
 <script lang='ts'>
-	import { socket } from "$lib/client/socket";
 	import { useBelote } from "$lib/client/games/belote/useBelote.svelte";
 	import type { UserBeloteState } from "$lib/types/games/belote";
+	import { leave } from "$lib/client/CoreSocket.svelte";
 
     
     const belote = useBelote()
@@ -23,16 +23,14 @@
                 usersGameState.find(u => u.id === p)?.username)
     })
 
-    async function backToMenu(){
-        socket.emit("leaveTable") 
-    }
+    
 </script>
 
 <div id="endGame">
     <span>Fin de la partie </span>
     <p>{winnerUsernames[0]} et {winnerUsernames[1]} ont gagné la partie !</p>
     <p>avec un total de {winnerTeam?.score} pts</p>
-    <button onclick={() => backToMenu()}>
+    <button onclick={() => leave()}>
         Retour au menu
     </button>
     

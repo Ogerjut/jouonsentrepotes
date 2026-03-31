@@ -30,9 +30,9 @@ export class TarotLoader{
         while (true) {
             this.hands = new Map()
             this.usersTarot.map(player => this.hands.set(player.id, []))
-            // const deck = new Deck().shuffle();
+            const deck = new Deck().shuffle();
             // console.log("deck :", deck)
-            const deck = [...DECK_CHELEM]
+            // const deck = [...DECK_CHELEM]
             while (deck.length > nbCardsChien) {
                 this.usersTarot.forEach(player => {
                     const hand = this.hands.get(player.id)!

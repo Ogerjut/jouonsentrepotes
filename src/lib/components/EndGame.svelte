@@ -1,7 +1,7 @@
 <script lang='ts'>
 	import ScoreBoard from "./ScoreBoard.svelte";
 	import type { Tarot } from "$lib/client/games/tarot/useTarot.svelte";
-	import { socket } from "$lib/client/socket";
+	import { leave } from "$lib/client/CoreSocket.svelte";
 
     type EndGameProps = {
         game : Tarot
@@ -11,16 +11,13 @@
 
     const score = $derived(new Map(Object.entries(game.table.gameState.finalScores)))
 
-    function backToMenu(){
-        socket.emit("leaveTable") 
-    }
     
 </script>
 
 <div id="endGame">
     <span>Fin de la partie </span> 
     <ScoreBoard {score} />
-    <button onclick={() => backToMenu()}>
+    <button onclick={() => leave()}>
         Retour au menu
     </button>
     

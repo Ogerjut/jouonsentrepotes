@@ -11,11 +11,8 @@
 	import PlayerInfo from "./PlayerInfo.svelte";
 	import ChessGameInfo from "./ChessGameInfo.svelte";
 	import PawnPromotion from "./PawnPromotion.svelte";
-	import Modale from "../Modale.svelte";
-	import { useModale } from "$lib/client/games/hook/useModale.svelte";
 	import EndGame from "./EndGame.svelte";
-	import { getCoreActionsModale, sendLeaveTable } from "$lib/client/coreModale.svelte";
-	// import { sendLeaveTable } from "$lib/client/coreModale.svelte";
+	import { sendLeaveTable } from "$lib/client/coreModale.svelte";
     
     let {data} : PageProps = $props()
     
@@ -23,15 +20,6 @@
     const opponent = $derived(chess?.opponentsGameState[0])
     const user = $derived(chess?.userGameState)
     const tableState =  $derived(chess?.table.gameState.state)
-    const modale = useModale()
-
-    // function sendLeaveTable(){
-    //     modale.show(
-    //         "Quitter la partie",
-    //         "Es-tu sûr de vouloir quitter la partie en cours ?\n Une défaite te sera comptée.",
-    //         getCoreActionsModale(["leave", "cancel"])
-    //     )
-    // }
 
     onMount(async () => {
         if (data.user && data.table.gameType === 'chess'){
@@ -96,17 +84,7 @@
                 </div>
             {/if}
 
-            {#if modale.visible}
-                <div class="overlay">
-                    <Modale 
-                    title={modale.data.title}
-                    message={modale.data.message}
-                    actions={modale.data.actions}
-                />
-                </div>
-                
-            {/if}
-
+        
         </div>
         
         {#if tableState !== "created" }
@@ -134,18 +112,6 @@
         align-items : center;
         justify-content: center;
     }
-
-    .overlay{
-        position:absolute;
-        z-index: 10;
-        inset : 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        pointer-events: all;
-        backdrop-filter: blur(1px);
-    }
-
 
 
 </style>

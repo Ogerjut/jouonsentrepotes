@@ -18,8 +18,11 @@ export interface TarotTableState {
     finalScores : Record<User["id"], number>
     roundDataScore : {oudlers : Oudlers, contrat : Contrat | null, score : number, hasWin : boolean, coef : CoefMarque, marque : number, 
         bonusHandfulDef : HandfulPoints, bonusHandfulTaker : HandfulPoints, bonusPetitAuBout : PetitAuBoutPoints, bonusSlam : SlamPoints,
-        takerScore : number, defScore : number
-    } 
+        takerScore : number, defScore : number, partnerScore : number | null
+    }
+    taker : User["id"] | null,
+    calledPlayer : User["id"] | null,
+    calledSuit : Suit | null
 }
 
 export interface UserTarotState {
@@ -39,7 +42,7 @@ export interface UserTarotState {
     contrat : Contrat | null
 }
 
-export type TarotState  = "created" | "beforeAuction" | "auction" | "afterAuction" |"beforeRound" | "showHandful" |"round" | "afterRound" | "endGame"
+export type TarotState  = "created" | "beforeAuction" | "auction" | "afterAuction" | "kingCall" | "showKingCalled" |"beforeRound" | "showHandful" |"round" | "afterRound" | "endGame"
 export type Card = {value : number, suit : Suit}
 export type Suit = "spade" | "heart" | "diamond" | "club" | "atout"
 export type TarotBid = 0 | 1 | 2 | 3 | 4
@@ -50,3 +53,4 @@ export type CoefMarque = 1 | 2 | 4 | 6
 export type HandfulPoints = 0 | 20 | 30 | 40
 export type PetitAuBoutPoints = -10 | 0 | 10
 export type SlamPoints = -200 | 0 | 200 | 400
+export type Handful5P = 0 | 8 | 10 | 13

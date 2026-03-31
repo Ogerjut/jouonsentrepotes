@@ -1,4 +1,3 @@
-import { goto } from "$app/navigation";
 import { socket } from "$lib/client/socket";
 import type { ChessPiece, PiecesType, Tile } from "$lib/types/games/chess";
 
@@ -15,7 +14,6 @@ class ChessController {
 
     async giveup(){
         socket.emit("chess:giveup")
-        
     }
 
     async askDraw(){
@@ -25,13 +23,6 @@ class ChessController {
     async respDraw(){
         socket.emit("chess:onAcceptedDraw")
     }
-
-    // à plutôt mettre dans coreController
-    async leave(){
-        socket.emit("leaveTable")
-        goto("/")
-    }
- 
 
 }
 

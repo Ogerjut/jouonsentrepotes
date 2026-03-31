@@ -1,4 +1,4 @@
-import type { BeloteTableDB, ChessTableDB, TableDB } from "$lib/types/db/tableDB"
+import type { BeloteTableDB, ChessTableDB, TableDB, TarotTableDB } from "$lib/types/db/tableDB"
 import type { ScoreMode } from "$lib/types/games/belote"
 import type { ChessTimer } from "$lib/types/games/chess"
 import { tablesCollection } from "../db/db"
@@ -21,7 +21,7 @@ export class TableFactory {
         }
     }
 
-    private getDocTarot(){
+    private getDocTarot() : Omit<TarotTableDB, "_id" >  {
         return {
             gameType : "tarot",
             createdAt : new Date(),
@@ -35,8 +35,8 @@ export class TableFactory {
                 bidMap : Object.fromEntries(new Map()),
                 round : 1,
                 auctionRound : 0,
-                // maxRound :  Number(this.formData.get('nbRound')),
-                maxRound : 1,
+                maxRound :  Number(this.formData.get('nbRound')),
+                // maxRound : 1,
                 actualBid : 0, 
                 trick : Object.fromEntries(new Map()), 
                 tricks : [],
@@ -49,8 +49,11 @@ export class TableFactory {
                 finalScores : Object.fromEntries(new Map()),
                 roundDataScore : {oudlers : 0, contrat : null, score : 0, hasWin : false, coef : 1, marque : 0, 
                         bonusHandfulDef : 0, bonusHandfulTaker : 0, bonusPetitAuBout : 0, bonusSlam : 0, 
-                        takerScore : 0, defScore : 0
-                }
+                        takerScore : 0, defScore : 0, partnerScore : null
+                },
+                taker : null,
+                calledPlayer : null,
+                calledSuit : null
             }
         }
     }

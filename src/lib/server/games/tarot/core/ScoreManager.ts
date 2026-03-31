@@ -4,15 +4,21 @@ import type { TarotTable } from "$lib/types/table"
 export class ScoreManager{
 
     private taker : UserTarotState
+    private partner : UserTarotState | null
     private tricks : Map<string, Card>[]
     private handfuls : Map<string, Card[]>
     private oudlers : Oudlers
+    private cards : Card[]
+    private maxPlayers : 4 | 5
 
-    constructor(table : TarotTable, taker : UserTarotState){
-        this.taker = taker
-        this.tricks = table.gameState.tricks.map(t => new Map(Object.entries(t))) 
-        this.handfuls = new Map(Object.entries(table.gameState.handfuls)) 
+    constructor(params : { table : TarotTable, taker : UserTarotState, partner : UserTarotState | null }){
+        this.taker = params.taker
+        this.partner = params.partner && params.partner.id !== params.taker.id ? params.partner : null
+        this.tricks = params.table.gameState.tricks.map(t => new Map(Object.entries(t))) 
+        this.handfuls = new Map(Object.entries(params.table.gameState.handfuls)) 
         this.oudlers = 0
+        this.cards = this.partner ? [...this.taker.cardsWon, ...this.partner.cardsWon] : this.taker.cardsWon
+        this.maxPlayers = params.table.playersId.length as 4 | 5
     }
 
     private getContrat() : Contrat{
@@ -32,7 +38,7 @@ export class ScoreManager{
     compute() {
         let score = 0
         this.oudlers = 0
-        this.taker.cardsWon.forEach(card => {
+        this.cards.forEach(card => {
             let pts = 0
             if (card.suit === "atout"){
                 if (card.value === 21 || card.value === 1 || card.value === 0){
@@ -70,7 +76,10 @@ export class ScoreManager{
 
     private defenseHasHandful() : Handful {
         const usernames = Array.from(this.handfuls.keys())
-        const filtered = usernames.filter(u => u !== this.taker.username)
+        const filtered = usernames.filter(u => 
+            u !== this.taker.username && 
+            (!this.partner || u !== this.partner.username)
+        )
         if (filtered.length === 0) return 0
         const handful = this.handfuls.get(filtered[0])
         return handful ? handful.length as Handful : 0
@@ -99,7 +108,7 @@ export class ScoreManager{
     }
         
     private checkSlamDone() {
-        const len = this.taker.cardsWon?.length ?? 0;
+        const len = this.cards.length;
         console.log("length cards won :", len)
         const bid = this.taker.bid ?? 0;
         const thresholds = bid <= 3 ? [77, 78] : bid === 4 ? [71, 72] : [];
@@ -111,7 +120,7 @@ export class ScoreManager{
         if (!lastPli) return { result: false, byTaker: false, winner: false };
     
         const cardInPli = this.cardIsInPli(lastPli, cardToCheck);
-        const byTaker = this.cardPlayedByTaker(lastPli, cardToCheck, this.taker.id);
+        const byTaker = this.cardPlayedByTaker(lastPli, cardToCheck, this.taker.id) || (this.partner ? this.cardPlayedByTaker(lastPli, cardToCheck, this.partner.id) : false);
         const winner = this.trickHasSingleAtout(lastPli);
         console.log(cardInPli, byTaker, winner)
         return { cardInPli, byTaker, winner };
@@ -150,8 +159,20 @@ export class ScoreManager{
             c => c.suit === cardToCheck.suit && c.value === cardToCheck.value
         );
     }
+
+    private getTakersMultiplier(hasWin : boolean) : number {
+        const isFivePlayers = this.maxPlayers === 5
+        const hasPartner = !!this.partner
+
+        if (isFivePlayers && hasPartner){
+            return hasWin ? 2 : -2
+        } else if (isFivePlayers && !hasPartner){
+            return hasWin ? 4 : -4
+        }   
+        return hasWin ? 3 : -3
+    }
     
-    // pour 4 joueurs
+    
     getMarque(score : number){
         const contrat = this.getContrat()
         const hasWin = this.hasWin(contrat, score)
@@ -163,8 +184,10 @@ export class ScoreManager{
         const bonusPetitAuBout = this.checkPetitAuBout(hasWin)
         
         const marque = (25 + Math.abs(score - contrat))*coef
-        const finalScore = marque + bonusHandfulTaker + bonusHandfulDef + bonusSlam + bonusPetitAuBout*coef 
-        const takerScore = hasWin ? finalScore*3 : finalScore*(-3)
+        const finalScore = marque + bonusHandfulTaker + bonusHandfulDef + bonusSlam + bonusPetitAuBout*coef
+
+        const takerScore = finalScore * (this.getTakersMultiplier(hasWin))
+        const partnerScore = this.partner ? (hasWin ? finalScore : finalScore*(-1)) : null
         const defScore = hasWin ? finalScore*(-1) : finalScore
         console.log("contrat", contrat,  "marque", marque, "coef", coef, "\nscore", finalScore,  "\nbonus handful taker : UserTarotState / def", bonusHandfulTaker, bonusHandfulDef,  "\nbonus petit au bout", bonusPetitAuBout, "\nbonus chelem", bonusSlam)
         
@@ -176,10 +199,10 @@ export class ScoreManager{
             coef, 
             marque, 
             bonusHandfulDef, bonusHandfulTaker, bonusPetitAuBout, bonusSlam,
-            takerScore, defScore
+            takerScore , defScore, partnerScore
         }
         
-        return {contrat, hasWin, takerScore, defScore, scoreData}
+        return {contrat, hasWin, takerScore, defScore, scoreData, partnerScore}
         
     }
 

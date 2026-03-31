@@ -38,7 +38,6 @@ class TarotController {
   }
 
   declareChelem(){
-    console.log("le preneur annonce faire un chelem")
     socket.emit("tarot:declareSlam")
   }
 
@@ -52,8 +51,12 @@ class TarotController {
   }
 
   validateDog(){
-    console.log("dog validé")
     socket.emit("tarot:registerDog")
+  }
+
+  kingCall(king : Card["suit"]){
+    console.log("appel du roi de " + king)
+    socket.emit("tarot:registerKingCall", king)
   }
 
 }

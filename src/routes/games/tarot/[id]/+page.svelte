@@ -19,6 +19,8 @@
 	import ShowRoundScore from '$lib/components/tarot/ShowRoundScore.svelte';
 	import RoundInfo from '$lib/components/tarot/RoundInfo.svelte';
 	import { sendLeaveTable } from '$lib/client/coreModale.svelte.js';
+	import PlayerSeat5P from '$lib/components/tarot/PlayerSeat5P.svelte';
+	import KingCall from '$lib/components/tarot/KingCall.svelte';
 
 
    let {data} = $props()
@@ -58,14 +60,19 @@
         
 </script>
 
-<!-- faire un composant pour 4joueurs et 5joueurs (plus tard) -->
  {#if tarot}
     <div id="game-container">
         <div id="table-area">
             <i>{tableState?.state} mode</i>
             <p>Round : {tableState?.round} / {tableState?.maxRound} </p>
             <Table/>
-            <PlayerSeat/>
+
+            {#if tarot.table.maxPlayers === 4}
+                <PlayerSeat/>
+            {:else}
+                <PlayerSeat5P/>
+            {/if}
+            
         
             <div style="grid-area: 2 / 2;">
                 
@@ -78,6 +85,9 @@
                                 <Auction />
                             </div>
                         
+                        {/if}
+                        {#if tableState?.state === 'kingCall' && tarot.table.maxPlayers === 5}
+                            <KingCall />
                         {/if}
                         {#if tableState?.state === 'afterAuction' && tableState?.actualBid < 3}
                             <div id='chien-container'>

@@ -54,3 +54,8 @@ export function initCoreSocket() {
     socket.off('redirection')
   }
 }
+
+export function leave(){
+  socket.emit("leaveTable")
+  goto("/")
+}

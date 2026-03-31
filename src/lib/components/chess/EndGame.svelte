@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { chessController } from "$lib/client/games/chess/chessController.svelte";
 	import { useChess } from "$lib/client/games/chess/useChess.svelte";
+	import { leave } from "$lib/client/CoreSocket.svelte";
 
     const chess = useChess()
     const endGameReason = $derived(chess?.table.gameState.endGameReason)
@@ -10,7 +10,7 @@
 <div id="endgame">
     <h1><b><u>Fin de partie</u></b></h1>
     <p>{endGameReason}</p>
-    <button onclick={() => chessController.leave()}> Retour au menu </button>
+    <button onclick={() => leave()}> Retour au menu </button>
         
         
 </div>

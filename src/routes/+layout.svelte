@@ -4,17 +4,19 @@
 	import { onMount } from 'svelte';
 
 	import Header from '$lib/components/Header.svelte';
-	import Nav from '$lib/components/Nav.svelte';
 	import { initCoreSocket } from '$lib/client/CoreSocket.svelte';
 	import Invitation from '$lib/components/Invitation.svelte';
 	import { useInvitation } from '$lib/client/games/hook/useInvitation.svelte';
 	import { useToast } from '$lib/client/games/hook/useToast.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import { useModale } from '$lib/client/games/hook/useModale.svelte';
+	import Modale from '$lib/components/Modale.svelte';
 	
 	let { children, data } = $props();
 	const invitation = useInvitation()
 	const toast = useToast()
+	const modale = useModale()
 
 	// toast.data.visible = true
 	// toast.data.message = "test toast"
@@ -53,6 +55,17 @@
 			message = {toast.data.message}
 		/>
 	{/if}
+
+	{#if modale.visible}
+		<div class="overlay">
+			<Modale 
+			title={modale.data.title}
+			message={modale.data.message}
+			actions={modale.data.actions}
+		/>
+		</div>
+		
+	{/if}
 	
 	
 </main>
@@ -78,6 +91,17 @@
 	
 		
 	}
+
+	.overlay{
+        position:absolute;
+        z-index: 10;
+        inset : 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: all;
+        backdrop-filter: blur(1px);
+    }
 
 </style>
 

@@ -10,14 +10,14 @@
 
     const maxCards = $derived(table?.maxPlayers === 4 ? 6 : 3)
     
-    let disabledButton = $derived(userGameState?.cardsWon.length !== maxCards)    
+    let disabledButton = $derived(!(userGameState?.cardsWon.length === maxCards && table?.gameState.dog.length === 0))    
 
 </script>
 
 {#if tarot && table && userGameState}
     <p>Chien : </p>
     <div class="dog">
-        {#each table.gameState.dog as card }
+        {#each table.gameState.dog as card (`${card.value}-${card.suit}`)}
             <Card value={card.value} suit={card.suit} /> 
         {/each}
     </div>
@@ -26,7 +26,7 @@
         <ProgressBar />
         <p>Nouveau Chien : </p>
         <div class="dog">
-            {#each userGameState.cardsWon as card }
+            {#each userGameState.cardsWon as card (`${card.value}-${card.suit}`) }
                 <Card value={card.value} suit={card.suit}/> 
             {/each}
         </div>

@@ -1,5 +1,5 @@
 import type { HandfulResponse } from "$lib/client/games/tarot/TarotController.svelte";
-import type { Card, Handful, TarotBid } from "$lib/types/games/tarot";
+import type { Card, Handful, Suit, TarotBid } from "$lib/types/games/tarot";
 import type { GameHandler } from "$lib/types/handlers/gameHandler";
 import type { TypedServer, TypedSocket } from "$lib/types/socket";
 import type { Table, TarotTable } from "$lib/types/table";
@@ -10,11 +10,13 @@ import type { TarotService } from "./TarotService";
 
 const TIMER_DURATIONS = {
     auction : 15000,
+    kingcall : 15000,
+    showKingCalled : 8000,
     setupDog : 30000,
     declareHandfulSlam : 8000, 
     showHandful : 8000, 
-    playRandomCard : 1000,
-    endRound : 15000, 
+    playRandomCard : 20000,
+    endRound : 20000, 
 }
 
 
@@ -83,6 +85,7 @@ export class TarotHandler implements GameHandler{
         socket.on("tarot:declareSlam", async () => await this.handleDeclareSlam(socket));
         socket.on("tarot:registerHandful", async (handfulSize, response) => await this.handleDeclareHandful(socket, handfulSize, response));
         socket.on("tarot:checkPlayableCard", async (card) => await this.handlePlayedCard(socket, card))
+        socket.on("tarot:registerKingCall", async (king) => await this.handleDeclareKingCall(socket, king))
         socket.on("disconnect", () => this.cleanup(socket));  
     }
 
@@ -92,6 +95,7 @@ export class TarotHandler implements GameHandler{
         socket.removeAllListeners("tarot:registerDog");
         socket.removeAllListeners("tarot:checkHandful");
         socket.removeAllListeners("tarot:declareSlam");
+        socket.removeAllListeners("tarot:registerKingCall");
         socket.removeAllListeners("tarot:registerHandful");
         socket.removeAllListeners("tarot:checkPlayableCard");
         this.sockets.delete(socket.id)
@@ -125,6 +129,9 @@ export class TarotHandler implements GameHandler{
     private async scheduledActionsAfterAuction(table : TarotTable, socket : TypedSocket | undefined){
         if (!socket) return
         switch (table.gameState.state){
+            case "kingCall" :
+                await this.scheduleRandomKingCall(socket, table.id)
+                break
             case "auction" : 
                 await this.scheduleAuctionNextTurn(socket, table.id)
                 break
@@ -135,6 +142,15 @@ export class TarotHandler implements GameHandler{
                 await this.scheduleEndDeclareHandfulSlam(table.id)
                 break 
         }
+    }
+
+    private async scheduleRandomKingCall(socket : TypedSocket, tableId : string){
+        console.log('scheduled timer for king call')
+        const timerInfo = this.timerManager.schedule(tableId, TIMER_DURATIONS.kingcall, async () => {
+            const king = this.tarotService.getRandomKing()
+            await this.handleDeclareKingCall(socket, king)
+        })
+        this.io.to(tableId).emit("timer:start", {...timerInfo, userId : null })
     }
 
     private async scheduleAuctionNextTurn(socket : TypedSocket, tableId : string){
@@ -238,7 +254,6 @@ export class TarotHandler implements GameHandler{
         this.io.to(table.id).emit("timer:start", {...timerInfo, userId : null })
     }
 
-    // créer une fonction playRandomCard() si jamais je sépare les timer dans une nouvelle classe
     private async scheduledPlayRandomCard(table : TarotTable){
         console.log('scheduled timer play random card')
         const currentPlayer = table.gameState.currentPlayer
@@ -303,7 +318,6 @@ export class TarotHandler implements GameHandler{
         } else {
             await this.startNewRound(await this.tarotService.resetTable(table))
         }
-        
     }
 
     private stopTimer(tableId : string){
@@ -323,6 +337,32 @@ export class TarotHandler implements GameHandler{
             this.emitGameStateUpdate(updatedTable.playersId)
         }
 
+    }
+
+    private async handleDeclareKingCall(socket : TypedSocket, king : Suit){
+        console.log("handle declare king call")
+        const tableId = socket.data.tableId
+        if (!tableId) return
+        this.stopTimer(tableId)
+        const table = await this.tarotService.handleKingCall(socket.data.userId, tableId, king)
+        this.io.to(tableId).emit('tarot:table', table)
+        await this.scheduleShowKingCalled(socket, table.id)
+
+    }
+
+    private async scheduleShowKingCalled(socket : TypedSocket, tableId : string){
+        this.stopTimer(tableId)
+        const timerInfo = this.timerManager.schedule(tableId, TIMER_DURATIONS.showKingCalled, async () => {
+        const table = await this.tarotService.getStateAfterShowKingCalled(tableId)
+            if (table.gameState.state === "afterAuction"){
+                await this.scheduleRandomDog(socket, tableId)
+            } 
+            if (table.gameState.state === "beforeRound"){
+                await this.scheduleEndDeclareHandfulSlam(tableId)
+            }
+            this.io.to(tableId).emit('tarot:table', table) 
+        })
+        this.io.to(tableId).emit("timer:start", {...timerInfo, userId : null })
     }
 
     

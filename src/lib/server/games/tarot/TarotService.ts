@@ -2,7 +2,7 @@ import type { Table, TarotTable } from "$lib/types/table";
 import type { User } from "$lib/types/user";
 import type { DeleteResult } from "mongodb";
 import type { TarotRepo } from "./TarotRepo";
-import type { Card, Handful, TarotBid, TarotState, TarotTableState, UserTarotState } from "$lib/types/games/tarot";
+import type { Card, Contrat, Handful, Suit, TarotBid, TarotState, TarotTableState, UserTarotState } from "$lib/types/games/tarot";
 import type { GameServices } from "$lib/types/services/gameServices";
 import type { TableRepository } from "../core/repositories/TableRepository";
 import { AuctionManager } from "./core/AuctionManager";
@@ -63,8 +63,9 @@ export class TarotService implements GameServices {
     async handleNewBid(tableId : string, userId : string, bid : TarotBid) : Promise<Table>{
         console.log("handle new bid :", bid)
         const table = await this.tableRepo.getTableById(tableId) as TarotTable
+        const maxPlayers = table.playersId.length
         const auctionManager = new AuctionManager(table)
-        const res = auctionManager.resolveBid(userId, bid)
+        const res = auctionManager.resolveBid(userId, bid, maxPlayers as 4 | 5)
         let gameState = res.gameState
         
         if (res.status === "continueAuction"){ 
@@ -128,6 +129,7 @@ export class TarotService implements GameServices {
     async registerDog(userId : string, tableId : string){
         console.log("register dog")
         const table = await this.tableRepo.getTableById(tableId) as TarotTable
+        if (table.gameState.dog.length !== 0) return table
         const user = await this.tarotRepo.getGameState(userId)
         const newGameState = {...table.gameState, state : "beforeRound" as TarotState, dog : [...user.cardsWon]}
         await this.tableRepo.update(tableId, {gameState : newGameState})
@@ -265,11 +267,19 @@ export class TarotService implements GameServices {
     private async handleEndRound(table : TarotTable) : Promise<TarotTable>{
         console.log("end round")
         const taker = await this.tarotRepo.getTaker(table.playersId)
-        const scoreManager = new ScoreManager(table, taker)
+        const partner = table.gameState.calledPlayer ? await this.tarotRepo.getGameState(table.gameState.calledPlayer) : null
+        const scoreManager = new ScoreManager({table, taker, partner})
         const points = scoreManager.compute()
-        const {contrat, hasWin, takerScore, defScore, scoreData} = scoreManager.getMarque(points)
+        const {contrat, hasWin, takerScore, defScore, scoreData, partnerScore} = scoreManager.getMarque(points)
+        await this.updateUsersGameState(table, takerScore, defScore, hasWin, contrat, partnerScore)
         let round = table.gameState.round
         if (round < table.gameState.maxRound){round++}
+        const newTableState = {...table.gameState, state : "afterRound" as TarotState, round, roundDataScore : scoreData}
+        await this.tableRepo.update(table.id, {gameState : newTableState})
+        return {...table, gameState : newTableState}
+    }
+
+    private async updateUsersGameState(table : TarotTable, takerScore : number, defScore : number, hasWin : boolean, contrat : Contrat | null, partnerScore : number | null ){
         await Promise.all(
             table.playersId.map(async (id) => {
                 const user = await this.tarotRepo.getGameState(id)
@@ -284,8 +294,15 @@ export class TarotService implements GameServices {
                     hasPlayed : false, 
                     playedCard : null, 
                 }
-                if (user.hasTaken){
+
+                const isTaker = user.id === table.gameState.taker
+                const isPartner = table.gameState.calledPlayer ? user.id === table.gameState.calledPlayer : false
+
+                if (isTaker){
                     score += takerScore
+                    await this.tarotRepo.update(user.id, {...newUserState, score, hasWin, contrat})
+                } else if (isPartner && partnerScore !== null) {
+                    score += partnerScore
                     await this.tarotRepo.update(user.id, {...newUserState, score, hasWin, contrat})
                 } else {
                     score += defScore
@@ -293,9 +310,6 @@ export class TarotService implements GameServices {
                 }
             })
         )
-        const newTableState = {...table.gameState, state : "afterRound" as TarotState, round, roundDataScore : scoreData}
-        await this.tableRepo.update(table.id, {gameState : newTableState})
-        return {...table, gameState : newTableState}
     }
 
     async resetTable(table : TarotTable) : Promise<TarotTable>{
@@ -315,7 +329,7 @@ export class TarotService implements GameServices {
             finalScores : Object.fromEntries(new Map()),
             roundDataScore : {oudlers : 0 as const, contrat : null, score : 0, hasWin : false, coef : 1 as const, marque : 0, 
                     bonusHandfulDef : 0 as const, bonusHandfulTaker : 0 as const, bonusPetitAuBout : 0 as const, bonusSlam : 0 as const, 
-                    takerScore : 0, defScore : 0
+                    takerScore : 0, defScore : 0, partnerScore : null
             }
         }
         await this.tableRepo.update(table.id, {gameState : newTableState})
@@ -379,6 +393,34 @@ export class TarotService implements GameServices {
         const newTableState = {...table.gameState, state : "endGame" as TarotState, finalScores : Object.fromEntries(res.playersScore)}
         await this.tableRepo.update(table.id, {completed : true, gameState : newTableState})
         return {...table, completed : true,  gameState : newTableState}
+    }
+
+    getRandomKing(){
+        const suits: Suit[] = ["heart", "diamond", "club", "spade"]
+        const randomIndex = Math.floor(Math.random() * suits.length);
+        return suits[randomIndex]
+    }
+
+    async handleKingCall(userId : string, tableId : string, king : Suit ) : Promise<TarotTable>{
+        console.log("handle king call :", king)
+        const table = await this.tableRepo.getTableById(tableId) as TarotTable
+        const usersGameState = await this.tarotRepo.getUsersTarotState(table.playersId)
+        let calledPlayerId = usersGameState.find(u => u.hand.some(c => c.suit === king && c.value === 14))?.id
+        if (!calledPlayerId){
+            calledPlayerId = userId
+        }
+        // const newState = table.gameState.actualBid < 3 ? "afterAuction" : "beforeRound" 
+        const newTableState = {...table.gameState, calledPlayer : calledPlayerId, taker : userId, calledSuit : king}
+        await this.tableRepo.update(tableId, {gameState : newTableState})
+        return {...table, gameState : newTableState}
+    }
+
+    async getStateAfterShowKingCalled(tableId : string){
+        const table = await this.tableRepo.getTableById(tableId) as TarotTable
+        const newState = table.gameState.actualBid < 3 ? "afterAuction" : "beforeRound"
+        const newTableState = {...table.gameState, state : newState as TarotState}
+        await this.tableRepo.update(tableId, {gameState : newTableState})
+        return {...table, gameState : newTableState} 
     }
 
 

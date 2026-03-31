@@ -17,7 +17,7 @@ export class AuctionManager {
     }
 
     private getAuctionOver(bid : TarotBid){
-        return this.bidMap.size === this.table.maxPlayers || bid === 4
+        return this.bidMap.size === this.table.playersId.length || bid === 4
     }
 
     private getMaxBid(){
@@ -52,20 +52,26 @@ export class AuctionManager {
         return resetGameState
     }
 
-    resolveBid(userId : string, bid : TarotBid) : AuctionResolution{
+    resolveBid(userId : string, bid : TarotBid, maxPlayers : 4 | 5) : AuctionResolution{
         this.bidMap.set(userId, bid)
         if (this.getAuctionOver(bid)){
             const {maxBid, userHasTaken} = this.getMaxBid()
             if (maxBid === 0){
                 return {status : "restartAuction", gameState : this.resetTableGameState()}
             } else {
-                const newState : TarotState = maxBid < 3 ? "afterAuction" : "beforeRound" 
+                const newState : TarotState = this.getNewState(maxBid, maxPlayers)
                 const newGameState = {...this.table.gameState, state : newState, bidMap : Object.fromEntries(this.bidMap) }
                 return {status : "endAuction", gameState : newGameState, maxBid, userHasTaken, }
             }
         }
         const newGameState = {...this.table.gameState, actualBid : bid, bidMap : Object.fromEntries(this.bidMap)}
         return {status : "continueAuction", gameState : newGameState}
+    }
+
+    getNewState(maxBid : TarotBid, maxPlayers : 4 | 5) : TarotState { 
+            if (maxPlayers === 4 && maxBid < 3) return "afterAuction"
+            if (maxPlayers === 5) return "kingCall"
+            return "beforeRound" 
     }
 
 
