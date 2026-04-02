@@ -1,8 +1,8 @@
 import type { TypedServer } from "$lib/types/socket";
-import { CoreHandler } from './games/core/handler/CoreHandler.js';
-import { tableService, presenceService, userService, gameServiceFactory, gameHandlerFactory, invitationService } from './games/core/bootstrap.js';
+import { CoreHandler } from './games/core/handler/CoreHandler';
+import { tableService, presenceService, userService, gameServiceFactory, gameHandlerFactory, invitationService } from './games/core/bootstrap';
 // import { PresenceHandler } from './games/core/handler/PresenceHandler';
-import { authMiddleware } from './middlewares/AuthMiddleware.js';
+import { authMiddleware } from './middlewares/AuthMiddleware';
 
 export default function socketController(io : TypedServer) {
 	console.log('🎮 Contrôleur de sockets initialisé !');
